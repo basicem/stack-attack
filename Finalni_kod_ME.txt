@@ -1,0 +1,1266 @@
+#include "mbed.h"
+#include <time.h> 
+#include "stm32f413h_discovery_ts.h"
+#include "stm32f413h_discovery_lcd.h"
+
+TS_StateTypeDef TS_State = { 0 };
+Ticker tasteri;
+Ticker provjera;
+Ticker rred;
+Ticker ciko;
+Ticker pauza;
+Ticker kukica2;
+int VrstaKutije = 0;
+int Pozicija = 0;
+int y = 37;
+int res = 0;
+int br = 0;
+int matrica[7][12] = {0};
+int k = -6;
+
+int red = 0;
+int kolona = 0;
+int score = 0;
+int uzeta = 0;
+int brojac_kuke = 0;
+int brojaci[12]={0};
+int kutija_vrsta=0;
+int bacena = 0;
+int x_c=120;
+int y_c=109;
+char tekst[30];
+int x;
+
+void Pauza() ;
+void IspisiCiku();
+void Tasteri();
+void Provjeri_Ciku();
+int DajPoziciju() {
+    int okej = 0;
+    int pozicija;
+    while(!okej) {
+        pozicija = (rand() % 12) + 1;
+        okej = 1;
+        if(brojaci[0] == 5 && pozicija == 1) okej = 0;
+        if(brojaci[1] == 5 && pozicija == 2) okej = 0;
+        if(brojaci[2] == 5 && pozicija == 3) okej = 0;
+        if(brojaci[3] == 5 && pozicija == 4) okej = 0;
+        if(brojaci[4] == 5 && pozicija == 5) okej = 0;
+        if(brojaci[5] == 5 && pozicija == 6) okej = 0;
+        if(brojaci[6] == 5 && pozicija == 7) okej = 0;
+        if(brojaci[7] == 5 && pozicija == 8) okej = 0;
+        if(brojaci[8] == 5 && pozicija == 9) okej = 0;
+        if(brojaci[9] == 5 && pozicija == 10) okej = 0;
+        if(brojaci[10] == 5 && pozicija == 11) okej = 0;
+        if(brojaci[11] == 5 && pozicija == 12) okej = 0;
+    }
+    return pozicija;
+}
+
+void Kukica() ;
+void Game_Over() ;
+
+
+void Cikica(int x, int y) {
+    BSP_LCD_FillRect(x + 4, y, 11, 4);     //kapa
+    BSP_LCD_DrawRect(x + 4, y + 4, 10, 8);    //glava
+    BSP_LCD_DrawRect(x+ 4, y + 12, 10, 12);    //trup
+    BSP_LCD_DrawRect(x+1 , y + 12, 3, 12);    //rukalijeva
+    BSP_LCD_DrawRect(x + 14, y + 12, 3, 12);    //rukadesna
+    BSP_LCD_FillRect(x + 4, y + 24, 10, 11);    //noge
+}
+
+void prva_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x, y, x+18, y+18); 
+    BSP_LCD_DrawLine(x, y+18, x+18, y);
+}
+
+void druga_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x, y+12, x+18, y+12); 
+    BSP_LCD_DrawLine(x, y+6, x+18, y+6);
+}
+
+void treca_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x, y, x+9, y+9); 
+    BSP_LCD_DrawLine(x+9, y+9, x+18, y);
+}
+
+void cetvrta_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x, y+9, x+9, y); 
+    BSP_LCD_DrawLine(x+9, y+18, x+18, y+9);
+}
+
+void peta_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x+5, y+4, x+18, y+4); 
+    BSP_LCD_DrawLine(x+5, y+4, x+5, y+11);
+    BSP_LCD_DrawLine(x+5, y+11, x+18, y+11);
+}
+
+void sesta_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_FillRect(x, y, 4, 4);
+    BSP_LCD_FillRect(x+15, y, 4, 4);
+    BSP_LCD_FillRect(x, y+14, 4, 4);
+    BSP_LCD_FillRect(x+15, y+14, 4, 4);
+}
+
+void sedma_kutija(int x, int y) {
+    BSP_LCD_DrawRect(x, y, 18, 18);
+    BSP_LCD_DrawLine(x, y+6, x+6, y+6); 
+    BSP_LCD_DrawLine(x+6, y+6, x+6, y+12);
+    BSP_LCD_DrawLine(x, y+12, x+6, y+12);
+    BSP_LCD_DrawLine(x+12, y+6, x+18, y+6); 
+    BSP_LCD_DrawLine(x+12, y+6, x+12, y+12);
+    BSP_LCD_DrawLine(x+12, y+12, x+18, y+12);
+}
+void prazna_kutija(int x, int y, int brisi_lijevu, int brisi_desnu) {
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    if(brisi_lijevu == 1 &&  brisi_desnu == 2) 
+        BSP_LCD_FillRect(x + 1, y, 22, 36); 
+        
+    else if(brisi_lijevu == 2 && brisi_desnu == 1)
+        BSP_LCD_FillRect(x - 3, y, 21, 36); 
+        
+    else if(brisi_lijevu == 2 && brisi_desnu == 2) 
+        BSP_LCD_FillRect(x - 3, y, 25, 36); 
+        
+    else if(brisi_lijevu == 1 && brisi_desnu == 1) {
+        BSP_LCD_FillRect(x, y, 19, 17);    
+    }
+    else if(brisi_lijevu == 0 && brisi_desnu == 1) {
+        BSP_LCD_FillRect(x+1, y, 18, 17);
+    }
+    else if(brisi_desnu == 0 && brisi_lijevu == 1) {
+        BSP_LCD_FillRect(x, y, 18, 17);
+    }
+    else if(brisi_desnu == 3 && brisi_lijevu == 3) {
+         BSP_LCD_FillRect(x + 1, y, 17, 7);
+         BSP_LCD_FillRect(x + 1, y + 7, 18, 14);
+    }
+    else
+        BSP_LCD_FillRect(x + 1, y, 17, 17);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+}
+
+void Provjeri_Ciku() {
+    if(x_c == x && y == y_c){
+        provjera.detach();
+        kukica2.detach();
+        tasteri.detach();
+        ciko.detach();
+        rred.detach();
+        pauza.detach();
+        Game_Over();   
+    } 
+        
+}
+void Provjeri_Red() {
+
+    int kutija = 0;
+    for(int i = 0; i < 12; i++) 
+        if(matrica[0][i] != 0) kutija++;
+    if(kutija == 12) {
+        score += 100;
+        // char tekst[30];
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        BSP_LCD_FillRect(86,157,70,14);
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        
+        sprintf(tekst, "Score: %d", score);
+        BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        BSP_LCD_FillRect(13,37,215,107);
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        brojaci[0]--;
+        brojaci[1]--;
+        brojaci[2]--;
+        brojaci[3]--;
+        brojaci[4]--;
+        brojaci[5]--;
+        brojaci[6]--;
+        brojaci[7]--;
+        brojaci[8]--;
+        brojaci[9]--;
+        brojaci[10]--;
+        brojaci[11]--;
+        for(int i = 0; i < 5; i++) {
+            for(int j = 0; j < 12; j++) {
+                if(i != 4) matrica[i][j] = matrica[i+1][j];
+                else
+                    matrica[i][j] = 0;
+            }
+        }
+        int x = 12, y = 127;
+        for(int i = 0; i < 5; i++) {
+            x = 12;
+            for(int j = 0; j < 12; j++) {
+                if(matrica[i][j] == 1) prva_kutija(x,y);
+                else if(matrica[i][j] == 2) druga_kutija(x,y);
+                else if(matrica[i][j] == 3) treca_kutija(x,y);
+                else if(matrica[i][j] == 4) cetvrta_kutija(x,y);
+                else if(matrica[i][j] == 5) peta_kutija(x,y);
+                else if(matrica[i][j] == 6) sesta_kutija(x,y);
+                else if(matrica[i][j] == 7) sedma_kutija(x,y);
+                x += 18;
+            }
+            y -= 18;
+        }
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        y_c = y_c + 18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+}
+
+
+void Game_Over() {
+
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DrawRect(65, 37, 100, 100);
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    
+    BSP_LCD_FillRect(66, 38, 99, 98);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetFont(&Font16);
+    char tekst[30];
+    sprintf(tekst, "GAME OVER ");
+    BSP_LCD_DisplayStringAt(65,37,(uint8_t *)tekst, LEFT_MODE);
+    
+    memset(&tekst[0], 0, sizeof(tekst));
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    BSP_LCD_FillRect(86,157,70,14);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    // char pomocni[30];
+    BSP_LCD_SetFont(&Font12);
+    sprintf(tekst, "Score: %d", score);
+    BSP_LCD_DisplayStringAt(90,112,(uint8_t *)tekst, LEFT_MODE);
+    
+    memset(&tekst[0], 0, sizeof(tekst));
+    
+    // char drugi[30];
+    BSP_LCD_DrawRect(73, 67, 85, 15);
+    sprintf(tekst, "Retry");
+    BSP_LCD_DisplayStringAt(95,70,(uint8_t *)tekst, LEFT_MODE);
+   
+    while (1) {
+        BSP_TS_GetState(&TS_State);
+        if(TS_State.touchDetected) {
+            uint16_t x1 = TS_State.touchX[0];
+            uint16_t y1 = TS_State.touchY[0];
+            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+            if((x1 > 70 && x1 < 160) && (y1 > 67 && y1 < 82)) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(13, 11, 215, 133); 
+                for(int i = 0; i < 5; i++) 
+                    for(int j = 0; j < 12; j++) 
+                        matrica[i][j] = 0;
+                        
+                    for(int i=0; i<12; i++) 
+                        brojaci[i]=0;
+                        
+                    score = 0;
+                    y = 37;
+                    bacena = 0;
+                    red = 0;
+                    brojac_kuke = 0;
+                    VrstaKutije = 0;
+                    Pozicija = 0;
+                    uzeta = 0;
+                    Pozicija = 0;
+                    k = -6;
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    // char novi[30];
+                    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                    BSP_LCD_FillRect(86,157,70,14);
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    memset(&tekst[0], 0, sizeof(tekst));
+                    sprintf(tekst, "Score: %d", score);
+                    BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+
+                    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                    Cikica(x_c, y_c);
+                    y_c = 109;
+                    x_c = 120;
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    Cikica(x_c, y_c);
+                    tasteri.attach(&Tasteri, 0.1);
+                    kukica2.attach(&Kukica, 0.3);
+                    provjera.attach(&Provjeri_Ciku, 0.05);
+                    rred.attach(&Provjeri_Red, 0.07);
+                    ciko.attach(&IspisiCiku, 0.05);
+                    pauza.attach(&Pauza,0.1);
+                    break;
+
+            }
+        }
+    }
+    
+}
+
+
+
+void Restart() {
+
+    res++;
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DrawRect(65, 37, 100, 100);
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    
+    BSP_LCD_FillRect(66, 38, 99, 98);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetFont(&Font16);
+    // char tekst[30];
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    BSP_LCD_FillRect(86,157,70,14);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    
+    BSP_LCD_SetFont(&Font12);
+    sprintf(tekst, "Score: %d", score);
+    BSP_LCD_DisplayStringAt(80,67,(uint8_t *)tekst, LEFT_MODE);
+    
+    BSP_LCD_DrawRect(70, 110, 90, 15);
+    sprintf(tekst, "Restart");
+    BSP_LCD_DisplayStringAt(92,112,(uint8_t *)tekst, LEFT_MODE);
+    BSP_LCD_DrawRect(70, 90, 90, 15);
+    sprintf(tekst, "Cancel");
+    BSP_LCD_DisplayStringAt(92,92,(uint8_t *)tekst, LEFT_MODE);
+    while(1) {
+        BSP_TS_GetState(&TS_State);
+        if(TS_State.touchDetected) {
+            uint16_t x1 = TS_State.touchX[0];
+            uint16_t y1 = TS_State.touchY[0];
+            if(res > 0 && (x1 > 70 && x1 < 160) && (y1 > 110 && y1 < 125)) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(13, 11, 215, 133); 
+                for(int i = 0; i < 5; i++) 
+                    for(int j = 0; j < 12; j++) 
+                        matrica[i][j] = 0;
+                        
+                    for(int i=0; i<12; i++) 
+                        brojaci[i]=0;
+                        
+                    score = 0;
+                    y = 37;
+                    bacena = 0;
+                    red = 0;
+                    brojac_kuke = 0;
+                    VrstaKutije = 0;
+                    Pozicija = 0;
+                    uzeta = 0;
+                    Pozicija = 0;
+                    k = -6;
+                    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                    BSP_LCD_FillRect(86,157,70,14);
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    sprintf(tekst, "Score: %d", score);
+                    BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+                    res = 0;
+                    kukica2.attach(&Kukica, 0.3);
+                    tasteri.attach(&Tasteri, 0.1);
+                    provjera.attach(&Provjeri_Ciku, 0.05);  
+                    rred.attach(&Provjeri_Red, 0.005);
+                    ciko.attach(&IspisiCiku, 0.05);
+                    pauza.attach(&Pauza,0.1);
+                    
+                    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                    Cikica(x_c, y_c);
+                    y_c = 109;
+                    x_c = 120;
+                    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                    Cikica(x_c, y_c);
+                    break;
+            }
+            if(res > 0 && (x1 > 70 && x1 < 160) && (y1 > 90 && y1 < 105))  {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(13, 11, 215, 133);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                int x = 12, y = 127;
+                for(int i = 0; i < 5; i++) {
+                    x = 12;
+                    for(int j = 0; j < 12; j++) {
+                        if(matrica[i][j] == 1) prva_kutija(x,y);
+                        else if(matrica[i][j] == 2) druga_kutija(x,y);
+                        else if(matrica[i][j] == 3) treca_kutija(x,y);
+                        else if(matrica[i][j] == 4) cetvrta_kutija(x,y);
+                        else if(matrica[i][j] == 5) peta_kutija(x,y);
+                        else if(matrica[i][j] == 6) sesta_kutija(x,y);
+                        else if(matrica[i][j] == 7) sedma_kutija(x,y);
+                        x += 18;
+                    }
+                    y -= 18;
+                }
+                res = 0;
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(86,157,70,14);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                
+                sprintf(tekst, "Score: %d", score);
+                BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+                kukica2.attach(&Kukica, 0.3);
+                tasteri.attach(&Tasteri, 0.1);
+                provjera.attach(&Provjeri_Ciku, 0.05);  
+                rred.attach(&Provjeri_Red, 0.005);
+                ciko.attach(&IspisiCiku, 0.05);
+                pauza.attach(&Pauza,0.1);
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                Cikica(x_c, y_c);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                Cikica(x_c, y_c);
+                break;
+            }
+        }
+    }
+}
+
+// int bro =  0;
+void Kukica() {
+    
+    if(k == 12)
+        prazna_kutija(k, 11, 1, 2);
+    else if(k == 210)
+        prazna_kutija(k, 11, 2, 1);
+    else if(k != -6) 
+        prazna_kutija(k, 11, 2,2);
+    
+    
+    if(brojac_kuke < 12)  k = k + 18;
+    else k = k - 18;
+        
+    if((uzeta == 0) && (k == 12 || k == 210) && red == 0) {
+        VrstaKutije = (rand() % 7) + 1; 
+        //if(bro < 2) 
+        //Pozicija = 5;
+        //else if(bro > 2 && bro < 4) Pozicija = 6;
+        //else 
+        //Pozicija = 9;
+        Pozicija = DajPoziciju(); 
+        //bro++;
+        if(Pozicija == 1) x = 12;
+        else if(Pozicija == 2) x = 30;
+        else if(Pozicija == 3) x = 48;
+        else if(Pozicija == 4) x = 66;
+        else if(Pozicija == 5) x = 84;
+        else if(Pozicija == 6) x = 102;
+        else if(Pozicija == 7) x = 120;
+        else if(Pozicija == 8) x = 138;
+        else if(Pozicija == 9) x = 156;
+        else if(Pozicija == 10) x = 174;
+        else if(Pozicija == 11) x = 192;
+        else if(Pozicija == 12) x = 210;
+        uzeta = 1;
+    }
+
+    brojac_kuke++;
+    if(brojac_kuke == 23) brojac_kuke = 1;
+        
+    BSP_LCD_DrawLine(k, 10, k, 18);
+    BSP_LCD_DrawLine(k + 18, 10, k + 18, 18);
+    
+    BSP_LCD_DrawLine(k, 19, k + 9, 26);
+    BSP_LCD_DrawLine(k + 18, 19, k + 9, 26);
+    
+    BSP_LCD_DrawRect(k, 26, 18, 3);
+    if(k != 12) BSP_LCD_DrawRect(k - 3, 26, 3, 10);
+    if(k != 210) BSP_LCD_DrawRect(k + 18, 26, 3, 10);
+    
+    if(uzeta == 1 && Pozicija == 1 && k == 12) { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 2 && k == 30) { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 3 && k == 48)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 4 && k == 66)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 5 && k == 84)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 6 && k == 102)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 7 && k == 120)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 8 && k == 138)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 9 && k == 156)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 10 && k == 174) { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 11 && k == 192)  { bacena = 1; uzeta = 0; }
+    else if(uzeta == 1 && Pozicija == 12 && k == 210)  { bacena = 1; uzeta = 0; }
+                
+    if(uzeta == 1) {
+        if(VrstaKutije == 1)
+            prva_kutija(k, 29);
+        if(VrstaKutije == 2)
+            druga_kutija(k, 29);
+        if(VrstaKutije == 3)
+            treca_kutija(k, 29);
+        if(VrstaKutije == 4)
+            cetvrta_kutija(k, 29);
+        if(VrstaKutije == 5)
+            peta_kutija(k, 29);
+        if(VrstaKutije == 6)
+            sesta_kutija(k, 29);
+        if(VrstaKutije == 7)
+            sedma_kutija(k, 29);
+    }
+    
+    if(bacena == 1) {
+        int brisi_desnu = 1, brisi_lijevu = 1;
+    
+        if(red <= 4 - brojaci[Pozicija - 1]) {
+            if(Pozicija == 1) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                if (matrica[5 - red][1] != 0) 
+                    BSP_LCD_FillRect(13, y, 17, 18);
+                else
+                    BSP_LCD_FillRect(13, y, 18, 18);  
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+            }
+            else if(Pozicija == 12) {
+                if(matrica[5 - red][10] != 0) brisi_lijevu = 0;
+                prazna_kutija(210, y, brisi_lijevu, 0);
+            }
+            else {
+                if(matrica[5 - red][Pozicija - 2] != 0) brisi_lijevu = 0;
+                if(matrica[5 - red][Pozicija] != 0) brisi_desnu = 0;
+                prazna_kutija(x, y, brisi_lijevu, brisi_desnu);
+            }
+            matrica[5 - red][Pozicija - 1] = 0;
+        }
+        
+        if(red <= 4 - brojaci[Pozicija - 1] && y < 127) {
+            matrica[4 - red][Pozicija - 1] = VrstaKutije;
+             y = y + 18;
+            if(VrstaKutije == 1)
+                prva_kutija(x, y);
+            if(VrstaKutije == 2)
+                druga_kutija(x, y);
+            if(VrstaKutije == 3)
+                treca_kutija(x, y);
+            if(VrstaKutije == 4)
+                cetvrta_kutija(x, y);
+            if(VrstaKutije == 5)
+                peta_kutija(x, y);
+            if(VrstaKutije == 6)
+                sesta_kutija(x, y);
+            if(VrstaKutije == 7)
+                sedma_kutija(x, y);
+            //provjera cike
+            
+        //matrica[4 - red][Pozicija - 1] = 0;
+            
+        red++;
+        }
+        else {
+            matrica[5 - red][Pozicija - 1] = VrstaKutije;
+            bacena = 0;
+            red = 0;
+            y = 37;
+            brojaci[Pozicija - 1]++;
+            uzeta = 0;
+        }
+    }
+} 
+
+int Daj_Poziciju_X(int x) {
+    //daje poziciju od 0 do 11
+    return ((x-12)/18);
+}
+
+int Daj_Poziciju_Yk(int y) {
+    //daje poziciju kutije od 0 do 4
+    if(y==127) return 0; 
+    if(y==109) return 1; 
+    if(y==91) return 2; 
+    if(y==73) return 3; 
+    if(y==55) return 4; 
+}
+
+int Daj_Poziciju_Yc(int y) {
+    //daje poziciju cike od 0 do 4
+    if(y==109) return 0; 
+    if(y==91) return 1; 
+    if(y==73) return 2; 
+    if(y==55) return 3;
+    if(y==37) return 4;
+}
+
+int Daj_Koordinatu_X(int pozicija_x) {
+    return (18*pozicija_x)+12;
+}
+
+int Daj_Koordinatu_Y(int pozicija_y) {
+    if(pozicija_y==0) return 109;
+    if(pozicija_y==1) return 91;
+    if(pozicija_y==2) return 73;
+    if(pozicija_y==3) return 55;
+    if(pozicija_y==4) return 37;
+}
+
+int Daj_Koordinatu_Yk(int pozicija_y) {
+    if(pozicija_y==0) return 127;
+    if(pozicija_y==1) return 109;
+    if(pozicija_y==2) return 91;
+    if(pozicija_y==3) return 73;
+    if(pozicija_y==4) return 55;
+}
+
+void gore_lijevo() {
+    //ne radi se nista
+    if(Daj_Poziciju_X(x_c)==0 || (Daj_Poziciju_X(x_c)==1 && matrica[Daj_Poziciju_Yc(y_c)][0]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][0]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-2]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-2]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)-1]!=0)) {}
+    //ako samo skoci
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]==0) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako se samo pomjeri
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]==0 && (brojaci[Daj_Poziciju_X(x_c)-1]==Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako ciko pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]==0 && Daj_Poziciju_Yc(y_c)!=0 && 
+    (matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)-1]==0
+    && brojaci[Daj_Poziciju_X(x_c)-1]<Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18; //ulijevo
+        y_c=y_c+18*(Daj_Poziciju_Yc(y_c) - brojaci[Daj_Poziciju_X(x_c)]); //pada
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako pomjeri kutiju
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-2]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]!=0)  {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1];
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]=0;
+        brojaci[Daj_Poziciju_X(x_c)-1]--;
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        brojaci[Daj_Poziciju_X(x_c)-2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako kutija pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]!=0 &&
+    (brojaci[Daj_Poziciju_X(x_c)-2]<Daj_Poziciju_Yc(y_c)+1)) {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1];
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]=0;
+        brojaci[Daj_Poziciju_X(x_c)-1]--;
+        matrica[brojaci[Daj_Poziciju_X(x_c)-2]][Daj_Poziciju_X(x_c)-2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        brojaci[Daj_Poziciju_X(x_c)-2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    } 
+}
+
+void gore() {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+        if(matrica[5- red][Pozicija - 1] != 0 && x==x_c) {
+            if(matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)-1]!=0 && 
+            matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)+1]!=0) {
+              prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+2), 0, 0); 
+            }
+            else if(matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)-1]!=0 && 
+            matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)+1]==0) {
+              prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+2), 0, 1); 
+            }
+            else if(matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)-1]==0 && 
+            matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)+1]!=0) {
+              prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+2), 1, 0); 
+            }
+            else if(matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)-1]==0 && 
+            matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)+1]==0) {
+              prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+2), 1, 1); 
+            }
+            matrica[5 - red][Pozicija - 1]=0;
+            red = 0;
+            Pozicija = 0;
+            uzeta = 0;
+            bacena = 0;
+            score+=30;
+            y = 37;
+            BSP_LCD_SetFont(&Font12);
+            char tekst[30];
+            sprintf(tekst, "Score: %d", score);
+            BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+            BSP_LCD_FillRect(13,37,215,107);
+            BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+            
+            int x_x = 12, y_y = 127;
+                for(int i = 0; i < 5; i++) {
+                    x_x = 12;
+                    for(int j = 0; j < 12; j++) {
+                        if(matrica[i][j] == 1) prva_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 2) druga_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 3) treca_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 4) cetvrta_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 5) peta_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 6) sesta_kutija(x_x,y_y);
+                        else if(matrica[i][j] == 7) sedma_kutija(x_x,y_y);
+                        x_x += 18;
+                    }
+                    y_y -= 18;
+                }
+    }
+    wait(0.5);
+            BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+            Cikica(x_c, y_c);
+            y_c=y_c+18;
+            BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+            Cikica(x_c, y_c);
+        
+}
+void gore_desno() {
+    //ne radi se nista
+    if(Daj_Poziciju_X(x_c)==11 || (Daj_Poziciju_X(x_c)==10 && matrica[Daj_Poziciju_Yc(y_c)][11]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][11]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+2]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+2]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+2][Daj_Poziciju_X(x_c)+1]!=0)) {}
+    //ako samo skoci
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]==0) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako se samo pomjeri
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]==0 && (brojaci[Daj_Poziciju_X(x_c)+1]==Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako ciko pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]==0 && Daj_Poziciju_Yc(y_c)!=0 && 
+    (matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)+1]==0
+    && brojaci[Daj_Poziciju_X(x_c)+1]<Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18; //ulijevo
+        y_c=y_c+18*(Daj_Poziciju_Yc(y_c) - brojaci[Daj_Poziciju_X(x_c)]); //pada
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako pomjeri kutiju
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+2]!=0
+    && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]!=0)  {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1];
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]=0;
+        brojaci[Daj_Poziciju_X(x_c)+1]--;
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1));
+        brojaci[Daj_Poziciju_X(x_c)+2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako kutija pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]!=0 &&
+    (brojaci[Daj_Poziciju_X(x_c)+2]<Daj_Poziciju_Yc(y_c)+1)) {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)+1), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1];
+        matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]=0;
+        brojaci[Daj_Poziciju_X(x_c)+1]--;
+        matrica[brojaci[Daj_Poziciju_X(x_c)+2]][Daj_Poziciju_X(x_c)+2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        brojaci[Daj_Poziciju_X(x_c)+2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        y_c=y_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    } 
+}
+
+void lijevo() {
+    //ne radi se nista
+    if(Daj_Poziciju_X(x_c)==0 || (Daj_Poziciju_X(x_c)==1 && matrica[Daj_Poziciju_Yc(y_c)][0]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-2]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]!=0)) {}
+    //ako se samo pomjeri
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]==0 && (brojaci[Daj_Poziciju_X(x_c)-1]==Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako ciko pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]==0 && Daj_Poziciju_Yc(y_c)!=0 && 
+    (matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)-1]==0
+    && brojaci[Daj_Poziciju_X(x_c)-1]<Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18; //ulijevo
+        y_c=y_c+18*(Daj_Poziciju_Yc(y_c) - brojaci[Daj_Poziciju_X(x_c)]); //pada
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako pomjeri kutiju
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-2]==0
+    && ((matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)-2]!=0) || Daj_Poziciju_Yc(y_c)==0) &&
+    matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)-1]==0)  {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1];
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]=0;
+        brojaci[Daj_Poziciju_X(x_c)-1]--;
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        brojaci[Daj_Poziciju_X(x_c)-2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako kutija pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)-1]!=0 && matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)-1]!=0 &&
+    (brojaci[Daj_Poziciju_X(x_c)-2]<Daj_Poziciju_Yc(y_c))) {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1];
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)-1]=0;
+        brojaci[Daj_Poziciju_X(x_c)-1]--;
+        matrica[brojaci[Daj_Poziciju_X(x_c)-2]][Daj_Poziciju_X(x_c)-2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)-2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)-2]));
+        brojaci[Daj_Poziciju_X(x_c)-2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c-18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    } 
+}
+
+void desno() {
+    //ne radi se nista
+    if(Daj_Poziciju_X(x_c)==11 || (Daj_Poziciju_X(x_c)==10 && matrica[Daj_Poziciju_Yc(y_c)][11]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+2]!=0) || 
+    (matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]!=0)) {}
+    //ako se samo pomjeri
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]==0 && (brojaci[Daj_Poziciju_X(x_c)+1]==Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako ciko pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]==0 && Daj_Poziciju_Yc(y_c)!=0 && 
+    (matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)+1]==0
+    && brojaci[Daj_Poziciju_X(x_c)+1]<Daj_Poziciju_Yc(y_c))) {
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18; //udesno
+        y_c=y_c+18*(Daj_Poziciju_Yc(y_c) - brojaci[Daj_Poziciju_X(x_c)]); //pada
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako pomjeri kutiju
+    else if(matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+2]==0
+    && ((matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)+2]!=0) || Daj_Poziciju_Yc(y_c)==0) &&
+    matrica[Daj_Poziciju_Yc(y_c)+1][Daj_Poziciju_X(x_c)+1]==0)  {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1];
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]=0;
+        brojaci[Daj_Poziciju_X(x_c)+1]--;
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)));
+        brojaci[Daj_Poziciju_X(x_c)+2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+    //ako kutija pada
+    else if(matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)+1]!=0 && matrica[Daj_Poziciju_Yc(y_c)-1][Daj_Poziciju_X(x_c)+1]!=0 &&
+    (brojaci[Daj_Poziciju_X(x_c)+2]<Daj_Poziciju_Yc(y_c))) {
+        prazna_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+1), Daj_Koordinatu_Yk(Daj_Poziciju_Yc(y_c)), 1, 1);
+        kutija_vrsta=matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1];
+        matrica[Daj_Poziciju_Yc(y_c)][Daj_Poziciju_X(x_c)+1]=0;
+        brojaci[Daj_Poziciju_X(x_c)+1]--;
+        matrica[brojaci[Daj_Poziciju_X(x_c)+2]][Daj_Poziciju_X(x_c)+2]=kutija_vrsta;
+        if(kutija_vrsta == 1)
+            prva_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 2)
+            druga_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 3)
+            treca_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 4)
+            cetvrta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 5)
+            peta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 6)
+            sesta_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        if(kutija_vrsta == 7)
+            sedma_kutija(Daj_Koordinatu_X(Daj_Poziciju_X(x_c)+2), Daj_Koordinatu_Yk(brojaci[Daj_Poziciju_X(x_c)+2]));
+        brojaci[Daj_Poziciju_X(x_c)+2]++;
+        BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+        Cikica(x_c, y_c);
+        x_c=x_c+18;
+        BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+        Cikica(x_c, y_c);
+    }
+}
+void Pauza() {
+    BSP_TS_GetState(&TS_State);
+    if(TS_State.touchDetected) {
+        uint16_t x1 = TS_State.touchX[0];
+        uint16_t y1 = TS_State.touchY[0];
+        if((x1 > 30 && x1 < 50) && (y1 > 152 && y1 < 172)) {
+            if(br == 0 && (x1 > 30 && x1 < 50) && (y1 > 152 && y1 < 172)) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(31,153,15,15);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                Point o[] = {{35, 156}, {35, 166}, {45, 161}};
+                BSP_LCD_FillPolygon(o,3);
+                tasteri.detach();
+                kukica2.detach();
+                provjera.detach();  
+                rred.detach();
+                ciko.detach();
+                br++;
+            }
+            else if(br > 0 && (x1 > 30 && x1 < 50) && (y1 > 152 && y1 < 172)) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(32,154,15,15);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                BSP_LCD_FillRect(36,156,2,12);
+                BSP_LCD_FillRect(43,156,2,12); 
+                kukica2.attach(&Kukica, 0.3);
+                tasteri.attach(&Tasteri, 0.1);
+                provjera.attach(&Provjeri_Ciku, 0.05);  
+                rred.attach(&Provjeri_Red, 0.005);
+                ciko.attach(&IspisiCiku, 0.05);
+                br = 0;
+            }
+        }
+    }
+}
+void Tasteri() {
+    BSP_TS_GetState(&TS_State);
+        if(TS_State.touchDetected) {
+            uint16_t x1 = TS_State.touchX[0];
+            uint16_t y1 = TS_State.touchY[0];
+
+
+                
+            if(x1 > 68 && x1 < 102 && y1 > 172 && y1 < 201) 
+                gore_lijevo();
+
+            if(x1 > 103 && x1 < 137 && y1 > 172 && y1 < 202)
+                gore();
+                
+            if(x1 > 138 && x1 < 173 && y1 > 172 && y1 < 201)
+                gore_desno();
+
+            if(x1 > 68 && x1 < 103 && y1 > 202 && y1 < 237) 
+                lijevo();
+                
+
+            if(x1 > 138 && x1 < 173 && y1 > 202 && y1 < 237) 
+                desno();
+                
+            //restart
+            if((x1 > 190 && x1 < 210) && (y1 > 152 && y1 < 172)) {
+                tasteri.detach();
+                kukica2.detach();
+                provjera.detach();  
+                rred.detach();
+                ciko.detach();
+                Restart();
+            }
+                
+    }
+}
+
+void IspisiCiku() {
+    BSP_LCD_FillRect(x_c + 4, y_c, 11, 4);     //kapa
+    BSP_LCD_DrawRect(x_c + 4, y_c + 4, 10, 8);    //glava
+    BSP_LCD_DrawRect(x_c + 4, y_c + 12, 10, 12);    //trup
+    BSP_LCD_DrawRect(x_c+1 , y_c + 12, 3, 12);    //rukalijeva
+    BSP_LCD_DrawRect(x_c + 14, y_c + 12, 3, 12);    //rukadesna
+    BSP_LCD_FillRect(x_c + 4, y_c + 24, 10, 11);    //noge
+    
+}
+void Start() {
+    
+    srand(time(0));
+    BSP_LCD_Init();
+    BSP_LCD_Clear(LCD_COLOR_ORANGE);
+    BSP_LCD_SetBackColor(LCD_COLOR_ORANGE);
+    BSP_LCD_DrawRect(12,10,216,135);
+        if (BSP_TS_Init(BSP_LCD_GetXSize(), BSP_LCD_GetYSize()) == TS_ERROR) {
+        printf("BSP_TS_Init error\n");
+    }
+    //iznad kuke
+    BSP_LCD_DrawRect(4,7,232,3);
+    for(int i=4; i<=234; i+=4) {
+        BSP_LCD_FillRect(i,6,1,1);
+    }
+    for(int i=6; i<=234; i+=4) {
+        BSP_LCD_FillRect(i,4,1,1);
+    }
+    
+    //pod
+    for(int i=4; i<=234; i+=4) {
+        BSP_LCD_FillRect(i,145,1,1);
+    }
+    for(int i=6; i<=234; i+=4) {
+        BSP_LCD_FillRect(i,147,1,1);
+    }
+    
+    //cigle lijeve
+    BSP_LCD_DrawRect(4,10,8,135);
+    for(int i=10; i<144; i+=4) {
+        BSP_LCD_DrawLine(4, i, 12, i);
+    }
+    for(int i=10; i<140; i+=8) {
+        BSP_LCD_DrawLine(8, i, 8, i+4);
+    }
+    //cigle desne
+    BSP_LCD_DrawRect(228,10,8,135);
+        for(int i=10; i<144; i+=4) {
+        BSP_LCD_DrawLine(228, i, 236, i);
+    }
+        for(int i=10; i<140; i+=8) {
+        BSP_LCD_DrawLine(232, i, 232, i+4);
+    }
+    
+    // Cikica(x_c, y_c);
+    
+    //dugmezapauzu
+    BSP_LCD_DrawRect(30,152,20,20);
+    BSP_LCD_FillRect(36,156,2,12);
+    BSP_LCD_FillRect(43,156,2,12); 
+    
+    //HighScore
+    BSP_LCD_SetFont(&Font12);
+    // char tekst[30];
+    sprintf(tekst, "Score: %d", score);
+    BSP_LCD_DisplayStringAt(86,157,(uint8_t *)tekst, LEFT_MODE);
+    
+    //dugmezarestart
+    BSP_LCD_DrawRect(190,152,20,20);
+    BSP_LCD_FillRect(205,156,2,7);
+    BSP_LCD_FillRect(200,161,5,2);
+    Point p[]= {{194, 162}, {200, 156}, {200, 167}};
+    BSP_LCD_FillPolygon(p,3);
+    
+    //upravljanje
+    BSP_LCD_DrawRect(68,172,35,30);
+    Point r[] = {{75, 179}, {75, 196}, {92, 179}};
+    BSP_LCD_FillPolygon(r,3);
+    
+    BSP_LCD_DrawRect(103,172,35,30);
+    Point s[] = {{120, 179}, {110, 197}, {130, 197}};
+    BSP_LCD_FillPolygon(s,3);
+
+    BSP_LCD_DrawRect(138,172,35,30);
+    Point q[] = {{145, 179}, {163, 179}, {163, 197}};
+    BSP_LCD_FillPolygon(q,3);
+    
+    BSP_LCD_DrawRect(68,202,35,30);
+    Point t[] = {{75, 217}, {92, 205}, {92, 228}};
+    BSP_LCD_FillPolygon(t,3);
+    
+    BSP_LCD_DrawRect(138,202,35,30);
+    Point u[] = {{164, 217}, {146, 205}, {146, 228}};
+    BSP_LCD_FillPolygon(u,3);
+    
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_DrawRect(65, 37, 100, 100);
+    BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+    
+    BSP_LCD_FillRect(66, 38, 99, 98);
+    BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+    BSP_LCD_SetFont(&Font16);
+    char tekst[30];
+    sprintf(tekst, "STACK ATTACK ");
+    BSP_LCD_DisplayStringAt(50,37,(uint8_t *)tekst, LEFT_MODE);
+    
+    memset(&tekst[0], 0, sizeof(tekst));
+    BSP_LCD_SetFont(&Font12);
+    BSP_LCD_DrawRect(70, 110, 90, 15);
+    sprintf(tekst, "Start");
+    BSP_LCD_DisplayStringAt(97,112,(uint8_t *)tekst, LEFT_MODE);
+    Cikica(130, 75);
+    prva_kutija(112, 92);
+    druga_kutija(94,74);
+    sedma_kutija(94,92);
+    cetvrta_kutija(76,92);
+    sesta_kutija(76, 56);
+    peta_kutija(76,74);
+    k = k + 80;
+    BSP_LCD_DrawLine(k, 10, k, 18);
+    BSP_LCD_DrawLine(k + 18, 10, k + 18, 18);
+    
+    BSP_LCD_DrawLine(k, 19, k + 9, 26);
+    BSP_LCD_DrawLine(k + 18, 19, k + 9, 26);
+    
+    BSP_LCD_DrawRect(k, 26, 18, 3);
+    if(k != 12) BSP_LCD_DrawRect(k - 3, 26, 3, 10);
+    if(k != 210) BSP_LCD_DrawRect(k + 18, 26, 3, 10);
+    k = -6;
+    
+    while(1) {
+        BSP_TS_GetState(&TS_State);
+            if(TS_State.touchDetected) {
+                BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                BSP_LCD_FillRect(13, 11, 200, 130);
+                BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+                uint16_t x1 = TS_State.touchX[0];
+                uint16_t y1 = TS_State.touchY[0];
+                //BSP_LCD_SetTextColor(LCD_COLOR_ORANGE);
+                if((x1 > 70 && x1 < 160) && (y1 > 110 && y1 < 125)) {
+                    Cikica(x_c, y_c);
+                    for(int i = 0; i < 5; i++) {
+                        for(int j = 0; j < 12; j++) {
+                            matrica[i][j] = 0;
+                        }
+                    }
+                    kukica2.attach(&Kukica, 0.3);
+                    tasteri.attach(&Tasteri, 0.1);
+                    provjera.attach(&Provjeri_Ciku, 0.05);  
+                    rred.attach(&Provjeri_Red, 0.005);
+                    ciko.attach(&IspisiCiku, 0.05);
+                    pauza.attach(&Pauza,0.1);
+                    break;
+                }
+            }
+    }
+    
+}
+int main() {
+  
+    Start();
+   while(1) {
+       wait(1);
+   }
+}
+
